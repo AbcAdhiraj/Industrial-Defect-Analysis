@@ -1,0 +1,18 @@
+Running tests on SYNTHETIC DATA
+
+[PASS] data_loader_and_split                            8 checks
+[PASS] discretisation                                   6 checks
+[PASS] rule_base_shape                                  5 checks
+[PASS] forward_chaining_hand_built                      8 checks
+[PASS] backward_chaining_proof                          7 checks
+[PASS] semantic_net_and_frames                          9 checks
+[PASS] minimax_equals_alphabeta_random_trees            401 checks
+[PASS] minimax_equals_alphabeta_real_plates             303 checks
+[PASS] generic_search_8_puzzle_and_classics             23 checks
+[PASS] routing_astar_ucs_equal_brute_force              240 checks
+[PASS] mst_heuristic_admissible                         2693 checks
+[PASS] csp_solvers_agree                                81 checks
+[PASS] scheduling_constraints_hold                      86 checks
+[PASS] evaluation_and_pipeline                          15 checks
+
+14 groups, 14 passed, 0 failed
