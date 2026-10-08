@@ -212,20 +212,24 @@ RobustResult = namedtuple("RobustResult", "decision value move nominal borderlin
                                           "minimax_nodes alphabeta_nodes")
 
 
+def make_game(features, thresholds, noise_frac=0.10, depth_limit=4, limit=4):
+    """Build the noise game for one plate from its measured features only."""
+    fired = forward_chain(thresholds.discretise(features)).fired
+    border = borderline_features(features, thresholds, fired, noise_frac, limit)
+    return RobustnessGame(features, thresholds, border, depth_limit)
+
+
 def robust_decision(features, thresholds, noise_frac=0.10, depth_limit=4, limit=4):
     """Run the game with BOTH solvers and report the inspector's decision.
 
     decision = the first move of optimal play: TRUST, REVIEW or
     REMEASURE(f) (re-read f, then trust). Uses only the measured features.
     """
-    facts = thresholds.discretise(features)
-    fired = forward_chain(facts).fired
-    border = borderline_features(features, thresholds, fired, noise_frac, limit)
-    game = RobustnessGame(features, thresholds, border, depth_limit)
+    game = make_game(features, thresholds, noise_frac, depth_limit, limit)
     mm_nodes, ab_nodes = [0], [0]
     mm_value, mm_move = minimax(game, game.initial(), mm_nodes)
     ab_value, ab_move = alphabeta(game, game.initial(), ab_nodes)
     assert (mm_value, mm_move) == (ab_value, ab_move), "alpha-beta disagrees with minimax"
     name = game.move_name(ab_move)
     return RobustResult(name.split("(")[0], ab_value / 10.0, name, game.nominal,
-                        [n for n, _ in border], mm_nodes[0], ab_nodes[0])
+                        list(game.names), mm_nodes[0], ab_nodes[0])

@@ -215,6 +215,11 @@ def banner(dataset):
             "there; results below do NOT describe real steel plates)")
 
 
+def source_tag(dataset):
+    """Short label for headings: 'REAL DATA' or 'SYNTHETIC DATA'."""
+    return "REAL DATA" if dataset.source == "REAL" else "SYNTHETIC DATA"
+
+
 def describe(dataset, train, test):
     """Printable verification summary (rows, columns, class counts, split)."""
     lines = [banner(dataset),
