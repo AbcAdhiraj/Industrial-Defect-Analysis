@@ -1,0 +1,8 @@
+true\pred,Pastry,Z_Scratch,K_Scatch,Stains,Dirtiness,Bumps,Other_Faults,data_source
+Pastry,17,11,0,3,1,6,9,SYNTHETIC DATA
+Z_Scratch,0,46,0,0,1,0,10,SYNTHETIC DATA
+K_Scatch,10,1,75,2,1,4,24,SYNTHETIC DATA
+Stains,1,0,2,18,1,0,0,SYNTHETIC DATA
+Dirtiness,1,2,0,0,9,1,4,SYNTHETIC DATA
+Bumps,13,3,0,2,12,74,17,SYNTHETIC DATA
+Other_Faults,11,36,20,38,30,36,31,SYNTHETIC DATA

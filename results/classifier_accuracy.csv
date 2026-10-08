@@ -1,0 +1,4 @@
+method,accuracy,note,data_source
+expert system (30 rules),0.4631,14.6 ms/run,SYNTHETIC DATA
+majority class (Other_Faults),0.3465,-,SYNTHETIC DATA
+best single feature (Maximum_of_Luminosity <= 175.1 ? Other_Faults : K_Scatch),0.4460,train acc 0.4264,SYNTHETIC DATA

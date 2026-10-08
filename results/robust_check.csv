@@ -1,0 +1,12 @@
+metric,value,data_source
+"accuracy, first move TRUST",0.4527 (n=338),SYNTHETIC DATA
+"accuracy, TRUST + REMEASURE (proceed)",0.4595 (n=407),SYNTHETIC DATA
+"accuracy, REVIEW plates",0.4716 (n=176),SYNTHETIC DATA
+"accuracy, all plates",0.4631 (n=583),SYNTHETIC DATA
+REVIEW rate,0.3019,SYNTHETIC DATA
+REMEASURE rate,0.1184,SYNTHETIC DATA
+minimax nodes (total),849164,SYNTHETIC DATA
+alpha-beta nodes (total),193097,SYNTHETIC DATA
+alpha-beta node saving,77.3%,SYNTHETIC DATA
+minimax time (mean of 5),2.536 s,SYNTHETIC DATA
+alpha-beta time (mean of 5),0.787 s,SYNTHETIC DATA

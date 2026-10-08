@@ -1,0 +1,105 @@
+Benchmarks on SYNTHETIC DATA  (train=1358, test=583)
+
+=== 1. Classifier accuracy on TEST (583 plates) [SYNTHETIC DATA] ===
+                                                                        method  accuracy              note
+                                                      expert system (30 rules)    0.4631       14.6 ms/run
+                                                 majority class (Other_Faults)    0.3465                 -
+best single feature (Maximum_of_Luminosity <= 175.1 ? Other_Faults : K_Scatch)    0.4460  train acc 0.4264
+
+Confusion matrix (rows = true, cols = predicted):
+true\pred     Pastry Z_Scra K_Scat Stains Dirtin  Bumps Other_   recall
+Pastry            17     11      0      3      1      6      9    36.2%
+Z_Scratch          0     46      0      0      1      0     10    80.7%
+K_Scatch          10      1     75      2      1      4     24    64.1%
+Stains             1      0      2     18      1      0      0    81.8%
+Dirtiness          1      2      0      0      9      1      4    52.9%
+Bumps             13      3      0      2     12     74     17    61.2%
+Other_Faults      11     36     20     38     30     36     31    15.3%
+
+=== 2. Robustness check on TEST (583 plates, noise=10% of train std, depth 4) [SYNTHETIC DATA] ===
+                               metric           value
+           accuracy, first move TRUST  0.4527 (n=338)
+accuracy, TRUST + REMEASURE (proceed)  0.4595 (n=407)
+              accuracy, REVIEW plates  0.4716 (n=176)
+                 accuracy, all plates  0.4631 (n=583)
+                          REVIEW rate          0.3019
+                       REMEASURE rate          0.1184
+                minimax nodes (total)          849164
+             alpha-beta nodes (total)          193097
+               alpha-beta node saving           77.3%
+             minimax time (mean of 5)         2.536 s
+          alpha-beta time (mean of 5)         0.787 s
+
+=== 3. Inspection-route search (5 runs x 60 plates per K; caps: 200000 nodes, 500000 frontier, 5s) [SYNTHETIC DATA] ===
+K       method   nodes     ms  cost/optimal  optimal  capped
+4          BFS     5.6  0.018         1.139      28%      0%
+4          DFS     5.0  0.015         1.139      28%      0%
+4        IDDFS    21.8  0.042         1.139      28%      0%
+4          UCS     9.3  0.027         1.000     100%      0%
+4  Greedy(MST)     5.0  0.039         1.100      41%      0%
+4      A*(MST)     5.0  0.036         1.000     100%      0%
+4     A*(weak)     6.3  0.029         1.000     100%      0%
+5          BFS    13.6  0.042         1.222       6%      0%
+5          DFS     6.0  0.020         1.222       6%      0%
+5        IDDFS    52.6  0.096         1.222       6%      0%
+5          UCS    18.4  0.057         1.000     100%      0%
+5  Greedy(MST)     6.0  0.059         1.169      19%      0%
+5      A*(MST)     6.3  0.058         1.000     100%      0%
+5     A*(weak)    12.1  0.065         1.000     100%      0%
+6          BFS    30.3  0.099         1.291       2%      0%
+6          DFS     7.0  0.027         1.291       2%      0%
+6        IDDFS   153.8  0.293         1.291       2%      0%
+6          UCS    34.6  0.125         1.000     100%      0%
+6  Greedy(MST)     7.0  0.094         1.187      17%      0%
+6      A*(MST)     8.5  0.105         1.000     100%      0%
+6     A*(weak)    24.0  0.150         1.000     100%      0%
+7          BFS    57.7  0.190         1.326       0%      0%
+7          DFS     8.0  0.032         1.326       0%      0%
+7        IDDFS   487.8  0.922         1.326       0%      0%
+7          UCS    61.2  0.240         1.000     100%      0%
+7  Greedy(MST)     8.0  0.130         1.217      10%      0%
+7      A*(MST)    12.3  0.186         1.000     100%      0%
+7     A*(weak)    45.8  0.298         1.000     100%      0%
+8          BFS    98.4  0.347         1.377       0%      0%
+8          DFS     9.0  0.039         1.377       0%      0%
+8        IDDFS  1626.9  3.172         1.377       0%      0%
+8          UCS    99.8  0.440         1.000     100%      0%
+8  Greedy(MST)     9.0  0.186         1.246       4%      0%
+8      A*(MST)    19.0  0.350         1.000     100%      0%
+8     A*(weak)    79.9  0.580         1.000     100%      0%
+9          BFS   146.8  0.532         1.422       0%      0%
+9          DFS    10.0  0.046         1.422       0%      0%
+9        IDDFS  4995.5  9.794         1.422       0%      0%
+9          UCS   147.2  0.682         1.000     100%      0%
+9  Greedy(MST)    10.1  0.238         1.284       1%      0%
+9      A*(MST)    28.1  0.599         1.000     100%      0%
+9     A*(weak)   124.2  0.932         1.000     100%      0%
+
+=== 4. Station-scheduling CSP (5 instances per size, node cap 20000; * = includes capped runs) [SYNTHETIC DATA] ===
+plates  checks      method     nodes  backtracks      ms  sat/unsat/capped
+     3      12          bt      52.2        39.8     2.1             5/0/0
+     3      12          fc      25.4        13.0     0.6             5/0/0
+     3      12      fc_mrv      13.0         0.6     0.6             5/0/0
+     3      12  ac3_fc_mrv      12.8         0.4     3.1             5/0/0
+     4      20          bt   8707.0*     8690.2*   704.7             3/0/2
+     4      20          fc   8337.6*     8321.6*   194.7             3/0/2
+     4      20      fc_mrv   8011.0*     7995.2*   238.7             3/0/2
+     4      20  ac3_fc_mrv   8010.6*     7995.6*   318.4             3/0/2
+     5      22          bt   4027.2*     4007.8*   394.7             4/0/1
+     5      22          fc   4019.0*     3999.6*    72.8             4/0/1
+     5      22      fc_mrv      28.8         8.6     2.5             5/0/0
+     5      22  ac3_fc_mrv      21.8         1.6    13.5             5/0/0
+     6      26          bt   8095.6*     8072.6*   938.5             3/0/2
+     6      26          fc   4576.2*     4553.0*   188.0             4/0/1
+     6      26      fc_mrv      25.8         0.6     2.8             5/0/0
+     6      26  ac3_fc_mrv      25.4         0.2    21.1             5/0/0
+     7      28          bt   4045.6*     4018.0*   479.4             4/0/1
+     7      28          fc   4029.6*     4002.0*   134.2             4/0/1
+     7      28      fc_mrv      40.8        11.4     6.8             5/0/0
+     7      28  ac3_fc_mrv      30.2         0.8    36.7             5/0/0
+     8      39          bt  16010.4*    15983.0*  3471.6             1/0/4
+     8      39          fc  16008.6*    15980.4*   670.3             1/0/4
+     8      39      fc_mrv   8041.6*     8008.6*   437.7             3/0/2
+     8      39  ac3_fc_mrv   8020.8*     7986.2*   279.7             3/0/2
+
+CSV files written to results/ (SYNTHETIC DATA)
