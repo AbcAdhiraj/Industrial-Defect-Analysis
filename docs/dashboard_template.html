@@ -1,0 +1,368 @@
+<title>Plate Inspection Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column of numbered-by-pipeline-step panels under a sticky step nav; HTML bars, CSS-grid heatmap, one SVG route map. */
+:root {
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --bg: #eef1f4; --surface: #fcfcfb; --ink: #11161b; --ink2: #4a555f; --muted: #6b7783;
+  --line: #d9dfe5; --grid: #e6eaee; --accent: #2a78d6; --accent-ink: #184f95;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --good: #0c8a0c; --warn: #fab219; --crit: #d03b3b; --good-bg: #e3f3e3; --warn-bg: #fdf1d3;
+  --track: #e8ecf0; --on-accent: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101315; --surface: #1a1a19; --ink: #f2f4f5; --ink2: #c3c2b7; --muted: #929aa1;
+    --line: #34383c; --grid: #2a2d30; --accent: #3987e5; --accent-ink: #86b6ef;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --good: #2fc02f; --good-bg: #17301a; --warn-bg: #3a2f10; --track: #2a2d30; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101315; --surface: #1a1a19; --ink: #f2f4f5; --ink2: #c3c2b7; --muted: #929aa1;
+  --line: #34383c; --grid: #2a2d30; --accent: #3987e5; --accent-ink: #86b6ef;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --good: #2fc02f; --good-bg: #17301a; --warn-bg: #3a2f10; --track: #2a2d30; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-inline: 16px; padding-block: 0 56px; }
+.wrap { max-width: 1080px; margin-inline: auto; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing: .01em; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1; text-transform: uppercase; }
+h2 { font-size: 28px; line-height: 1.1; text-transform: uppercase; }
+h3 { font-size: 18px; text-transform: uppercase; color: var(--ink2); letter-spacing: .06em; }
+.mono, td.n, .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+header.top { padding-block: 36px 20px; display: grid; gap: 14px; }
+.lede { max-width: 62ch; color: var(--ink2); margin: 0; }
+.banner { display: inline-flex; gap: 8px; align-items: center; font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em;
+  padding: 6px 10px; border: 1px solid var(--line); background: var(--warn-bg); width: fit-content; max-width: 100%; }
+.banner b { color: var(--ink); }
+.banner.real { background: var(--good-bg); }
+nav.steps { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-block: 1px solid var(--line);
+  display: flex; gap: 4px; overflow-x: auto; padding-block: 8px; margin-bottom: 28px; }
+nav.steps a { font-family: var(--font-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink2);
+  text-decoration: none; padding: 6px 10px; white-space: nowrap; border: 1px solid transparent; }
+nav.steps a:hover, nav.steps a:focus-visible { border-color: var(--accent); color: var(--ink); outline: none; }
+.flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-bottom: 40px; }
+.flow .step { background: var(--surface); border: 1px solid var(--line); padding: 14px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.chip { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-ink); }
+.flow .big { font-family: var(--font-display); font-size: 40px; line-height: 1; font-weight: 700; }
+.flow .small { color: var(--ink2); font-size: 13px; }
+section.panel { margin-bottom: 44px; scroll-margin-top: 70px; }
+section.panel > header { display: grid; gap: 6px; margin-bottom: 14px; }
+.panel .why { color: var(--ink2); margin: 0; max-width: 70ch; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); padding: 16px; min-width: 0; display: grid; gap: 12px; align-content: start; }
+.card p.note { margin: 0; color: var(--muted); font-size: 12.5px; }
+.bars { display: grid; gap: 8px; }
+.bar { display: grid; grid-template-columns: minmax(96px, 190px) 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+.bar .lab { color: var(--ink2); min-width: 0; overflow-wrap: anywhere; }
+.bar .track { background: var(--track); height: 16px; position: relative; }
+.bar .fill { height: 100%; background: var(--s1); border-radius: 0 4px 4px 0; transition: width .35s ease; }
+.bar .fill.alt { background: var(--muted); opacity: .7; }
+.bar .fill.hot { background: var(--s2); }
+.bar .val { min-width: 54px; text-align: right; font-size: 13px; }
+.refline { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed var(--ink); opacity: .7; }
+.seg { display: flex; height: 30px; gap: 2px; }
+.seg > div { display: grid; place-items: center; color: #fff; font-family: var(--font-mono); font-size: 12px; min-width: 0; overflow: hidden; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink2); }
+.legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
+.heat { display: grid; grid-template-columns: 74px repeat(7, minmax(0, 1fr)) 58px; gap: 2px; font-family: var(--font-mono); font-size: 11.5px; }
+.heat > div { display: grid; place-items: center; min-height: 34px; min-width: 0; }
+.heat .hd { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .02em; min-height: 26px; }
+.heat .rl { justify-items: end; padding-right: 6px; color: var(--ink2); font-size: 11px; text-align: right; }
+.heat .cell { cursor: default; }
+.heat .diag { outline: 1.5px solid var(--ink); outline-offset: -2px; }
+.heat .rec { color: var(--ink2); }
+.scroll { overflow-x: auto; }
+.seg2 { display: inline-flex; border: 1px solid var(--line); width: fit-content; }
+.seg2 button { font: 500 13px var(--font-mono); background: transparent; color: var(--ink2); border: 0; padding: 7px 14px; cursor: pointer; }
+.seg2 button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.seg2 button:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: left; font: 500 11px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); }
+td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--grid); }
+td.n { text-align: right; }
+.tests { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.test { display: flex; gap: 10px; align-items: baseline; justify-content: space-between; background: var(--surface); border: 1px solid var(--line);
+  padding: 8px 12px; font-size: 12.5px; min-width: 0; }
+.test .nm { overflow-wrap: anywhere; min-width: 0; }
+.pill { font: 500 11px var(--font-mono); padding: 2px 7px; background: var(--good-bg); color: var(--good); white-space: nowrap; }
+.pill.fail { background: #fbe3e3; color: var(--crit); }
+svg.map { width: 100%; height: auto; max-height: 440px; background: var(--surface); }
+svg.map text { font-family: var(--font-mono); fill: var(--ink); stroke: var(--surface); stroke-width: .9px; paint-order: stroke; }
+.maplegend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--ink2); }
+.caveats { margin: 0; padding-left: 18px; color: var(--ink2); display: grid; gap: 6px; max-width: 80ch; }
+#tip { position: fixed; z-index: 20; pointer-events: none; background: var(--ink); color: var(--bg); font: 12px/1.4 var(--font-mono);
+  padding: 6px 9px; max-width: 260px; opacity: 0; transition: opacity .1s; }
+button.theme { position: absolute; right: 0; top: 36px; font: 500 12px var(--font-mono); background: var(--surface); color: var(--ink2);
+  border: 1px solid var(--line); padding: 6px 10px; cursor: pointer; }
+header.top { position: relative; }
+@media (max-width: 560px) { .bar { grid-template-columns: 1fr auto; } .bar .track { grid-column: 1 / -1; grid-row: 2; } button.theme { position: static; width: fit-content; } }
+@media (prefers-reduced-motion: reduce) { .bar .fill { transition: none; } }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="mono chip">AI PBL · Modules 1–3 · steel plates</div>
+  <h1>Plate Inspection<br>Dashboard</h1>
+  <p class="lede">A rule-based expert system names the fault, a noise game checks that answer, A* plans the inspection route and a constraint solver schedules the stations. Every number on this page comes from an actual run.</p>
+  <div id="banner" class="banner"></div>
+  <button class="theme" id="theme" type="button">Theme</button>
+</header>
+
+<nav class="steps" aria-label="Pipeline steps">
+  <a href="#classify">1 Classify</a><a href="#check">2 Check</a><a href="#plan">3 Plan</a><a href="#schedule">4 Schedule</a><a href="#tests">Tests</a><a href="#notes">Notes</a>
+</nav>
+
+<div class="flow" id="flow"></div>
+
+<section class="panel" id="classify">
+  <header><span class="chip">Step 1 · Module 3 · expert system</span><h2>Which fault is it, and why?</h2>
+  <p class="why" id="classify-why"></p></header>
+  <div class="grid2">
+    <div class="card"><h3>Test accuracy</h3><div class="bars" id="acc-bars"></div>
+      <p class="note">30 hand-written rules; thresholds and both baselines use the training split only.</p></div>
+    <div class="card"><h3>Recall per true class</h3><div class="bars" id="recall-bars"></div>
+      <p class="note">Share of each true class the rules label correctly.</p></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Confusion matrix (test split)</h3>
+    <div class="scroll"><div class="heat" id="heat" style="min-width:520px"></div></div>
+    <p class="note">Rows are the true class, columns the prediction. Cell shade is the share of the row; the outlined diagonal is correct.</p></div>
+</section>
+
+<section class="panel" id="check">
+  <header><span class="chip">Step 2 · Module 2 · adversarial search</span><h2>Is the answer stable under sensor noise?</h2>
+  <p class="why" id="check-why"></p></header>
+  <div class="grid2">
+    <div class="card"><h3>Inspector's first move</h3><div class="seg" id="seg"></div><div class="legend" id="seg-legend"></div>
+      <h3 style="margin-top:6px">Accuracy by group</h3><div class="bars" id="rob-bars"></div>
+      <p class="note">The dashed line marks accuracy over all plates. True labels are used only for this scoring.</p></div>
+    <div class="card"><h3>Nodes expanded, whole test split</h3><div class="bars" id="node-bars"></div>
+      <div class="mono" style="font-size:34px;font-family:var(--font-display)" id="saving"></div>
+      <p class="note" id="saving-note"></p></div>
+  </div>
+</section>
+
+<section class="panel" id="plan">
+  <header><span class="chip">Step 3 · Module 1 · state-space search</span><h2>In what order are the checks visited?</h2>
+  <p class="why" id="plan-why"></p></header>
+  <div class="seg2" id="kpick" role="group" aria-label="Number of checkpoints K"></div>
+  <div class="grid2" style="margin-top:14px">
+    <div class="card"><h3>Nodes expanded (log scale)</h3><div class="bars" id="s-nodes"></div></div>
+    <div class="card"><h3>Route cost ÷ optimal cost</h3><div class="bars" id="s-ratio"></div>
+      <p class="note">1.00 is the optimal route. Bars start at 1.00.</p></div>
+  </div>
+  <div class="card scroll" style="margin-top:14px"><h3>All methods at this K</h3><table id="s-table"></table></div>
+  <div class="grid2" style="margin-top:14px">
+    <div class="card"><h3 id="map-title">Example plate</h3><svg class="map" id="map" viewBox="-6 -6 112 112" role="img" aria-label="Checkpoint map with A* and BFS routes"></svg>
+      <div class="maplegend" id="map-legend"></div></div>
+    <div class="card"><h3>What the example shows</h3><div id="map-facts" class="mono" style="font-size:12.5px;display:grid;gap:6px"></div></div>
+  </div>
+</section>
+
+<section class="panel" id="schedule">
+  <header><span class="chip">Step 4 · Module 1 · constraint satisfaction</span><h2>Which station and slot runs each check?</h2>
+  <p class="why" id="sched-why"></p></header>
+  <div class="card"><h3>Mean nodes visited per batch size (log scale)</h3>
+    <div class="legend" id="csp-legend"></div><div id="csp-groups" style="display:grid;gap:16px"></div>
+    <p class="note">A trailing * means at least one instance hit the 20,000-node cap, so the mean is a lower bound. Each instance is identical for all four solvers.</p></div>
+  <div class="card scroll" style="margin-top:14px"><h3>Outcome per solver</h3><table id="csp-table"></table></div>
+</section>
+
+<section class="panel" id="tests">
+  <header><span class="chip">Verification</span><h2 id="tests-h">Tests</h2></header>
+  <div class="tests" id="tests-grid"></div>
+</section>
+
+<section class="panel" id="notes">
+  <header><span class="chip">Read before quoting</span><h2>Notes and limits</h2></header>
+  <ul class="caveats" id="caveats"></ul>
+</section>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+var D = __DATA__;
+var $ = function (id) { return document.getElementById(id); };
+var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]; }); };
+var num = function (s) { var m = String(s).replace(/,/g, "").match(/-?\d+(\.\d+)?/); return m ? parseFloat(m[0]) : NaN; };
+var pct = function (x, d) { return (100 * x).toFixed(d == null ? 1 : d) + "%"; };
+var SYN = D.source.indexOf("SYNTHETIC") >= 0;
+
+/* ---- tooltip (event delegation) ---- */
+var tip = $("tip");
+document.addEventListener("pointermove", function (e) {
+  var t = e.target.closest ? e.target.closest("[data-tip]") : null;
+  if (!t) { tip.style.opacity = 0; return; }
+  tip.textContent = t.getAttribute("data-tip"); tip.style.opacity = 1;
+  tip.style.left = Math.min(e.clientX + 14, window.innerWidth - 270) + "px"; tip.style.top = (e.clientY + 16) + "px";
+});
+
+/* ---- generic horizontal bar rows ---- */
+function bars(el, rows, o) {
+  o = o || {};
+  var max = o.max || Math.max.apply(null, rows.map(function (r) { return r.v; }));
+  var min = o.min || 0;
+  el.innerHTML = rows.map(function (r) {
+    var w = o.log ? Math.max(2, 100 * Math.log10(Math.max(r.v, 1)) / Math.log10(max)) : Math.max(1.5, 100 * (r.v - min) / (max - min));
+    var ref = o.ref != null ? '<span class="refline" style="left:' + (100 * (o.ref - min) / (max - min)) + '%"></span>' : "";
+    return '<div class="bar" data-tip="' + esc(r.tip || r.label + ": " + r.text) + '"><span class="lab">' + esc(r.label) + '</span>' +
+      '<span class="track"><span class="fill ' + (r.cls || "") + '" style="display:block;width:' + w + '%;' + (r.color ? "background:" + r.color : "") + '"></span>' + ref + '</span>' +
+      '<span class="val">' + esc(r.text) + '</span></div>';
+  }).join("");
+}
+
+/* ---- header, banner, theme ---- */
+$("banner").className = "banner" + (SYN ? "" : " real");
+$("banner").innerHTML = SYN ? "<b>SYNTHETIC DATA</b> · data/Faults.NNA not found. These numbers show the code works, not how well it does on real steel." :
+  "<b>REAL DATA</b> · UCI Steel Plates Faults";
+$("theme").onclick = function () {
+  var r = document.documentElement, dark = r.getAttribute("data-theme") === "dark" ||
+    (!r.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches);
+  r.setAttribute("data-theme", dark ? "light" : "dark");
+};
+
+/* ---- derived numbers ---- */
+var expert = D.accuracy[0], majority = D.accuracy[1], single = D.accuracy[2];
+var R = D.robust;
+var trustN = num(R["accuracy, first move TRUST"].split("n=")[1]), remN = num(R["accuracy, TRUST + REMEASURE (proceed)"].split("n=")[1]) - trustN,
+    revN = num(R["accuracy, REVIEW plates"].split("n=")[1]);
+var allN = trustN + remN + revN;
+var mm = num(R["minimax nodes (total)"]), ab = num(R["alpha-beta nodes (total)"]);
+var S = D.search.map(function (r) { return {K: +r.K, m: r.method, nodes: num(r.nodes), ms: num(r.ms), ratio: num(r.ratio), opt: r.optimal, cap: r.capped, skipped: r.nodes.indexOf("SKIPPED") >= 0}; });
+function sRow(K, m) { return S.filter(function (r) { return r.K === K && r.m === m; })[0]; }
+var maxK = Math.max.apply(null, S.map(function (r) { return r.K; }));
+
+/* ---- pipeline summary ---- */
+$("flow").innerHTML = [
+  ["1 · Classify", pct(expert[1]), "test accuracy; majority baseline " + pct(majority[1]), "Module 3"],
+  ["2 · Check", pct(1 - ab / mm, 0), "fewer nodes with alpha-beta than minimax", "Module 2"],
+  ["3 · Plan", (sRow(maxK, "UCS").nodes / sRow(maxK, "A*(MST)").nodes).toFixed(1) + "×", "fewer nodes for A* than UCS at K = " + maxK + ", same optimal cost", "Module 1"],
+  ["4 · Schedule", "FC + MRV", "solves batches where plain backtracking hits the node cap", "Module 1"]
+].map(function (s) { return '<div class="step"><span class="chip">' + s[3] + '</span><div class="chip" style="color:var(--ink)">' + s[0] + '</div><div class="big">' + s[1] + '</div><div class="small">' + s[2] + '</div></div>'; }).join("");
+
+/* ---- step 1 ---- */
+$("classify-why").textContent = "Rules fire on LOW / MEDIUM / HIGH facts. The expert system scores " + pct(expert[1]) + " on the test split, against " + pct(single[1]) +
+  " for the best single-feature threshold and " + pct(majority[1]) + " for always guessing the majority class.";
+bars($("acc-bars"), [
+  {label: "Expert system", v: expert[1], text: pct(expert[1]), tip: "30 rules, " + expert[2]},
+  {label: "Best single feature", v: single[1], text: pct(single[1]), cls: "alt", tip: single[0]},
+  {label: "Majority class", v: majority[1], text: pct(majority[1]), cls: "alt", tip: majority[0]}], {max: 0.6});
+var rec = D.confusion.map(function (row, i) { var t = row.reduce(function (a, b) { return a + b; }, 0); return {cls: D.classes[i], n: t, r: t ? row[i] / t : 0}; });
+bars($("recall-bars"), rec.map(function (x) { return {label: x.cls, v: x.r, text: pct(x.r, 0), tip: x.cls + ": " + pct(x.r) + " of " + x.n + " test plates", color: x.cls === "Other_Faults" ? "var(--muted)" : ""}; }), {max: 1});
+var h = '<div class="hd"></div>' + D.classes.map(function (c) { return '<div class="hd">' + esc(c.slice(0, 6)) + '</div>'; }).join("") + '<div class="hd">recall</div>';
+D.confusion.forEach(function (row, i) {
+  var t = row.reduce(function (a, b) { return a + b; }, 0);
+  h += '<div class="rl">' + esc(D.classes[i]) + '</div>';
+  row.forEach(function (v, j) {
+    var share = t ? v / t : 0, p = Math.round(share * 100);
+    h += '<div class="cell' + (i === j ? " diag" : "") + '" data-tip="true ' + esc(D.classes[i]) + ' → predicted ' + esc(D.classes[j]) + ': ' + v + ' plates (' + pct(share, 0) + ' of row)" style="background:color-mix(in srgb,var(--accent) ' + p + '%,var(--surface));color:' + (p > 52 ? "#fff" : "var(--ink)") + '">' + v + '</div>';
+  });
+  h += '<div class="rec">' + pct(rec[i].r, 0) + '</div>';
+});
+$("heat").innerHTML = h;
+
+/* ---- step 2 ---- */
+$("check-why").textContent = "The inspector (MAX) can trust the label, send it to review, or re-measure a borderline reading; worst-case noise (MIN) shifts readings by ±10% of a standard deviation. Minimax and alpha-beta return the same decision on every plate.";
+var segs = [["TRUST", trustN, "var(--s1)"], ["REMEASURE", remN, "var(--s3)"], ["REVIEW", revN, "var(--s2)"]];
+$("seg").innerHTML = segs.map(function (s) { return '<div data-tip="' + s[0] + ': ' + s[1] + ' plates (' + pct(s[1] / allN) + ')" style="flex:' + s[1] + ';background:' + s[2] + '">' + (s[1] / allN > .08 ? s[1] : "") + '</div>'; }).join("");
+$("seg-legend").innerHTML = segs.map(function (s) { return '<span><i style="background:' + s[2] + '"></i>' + s[0] + ' ' + pct(s[1] / allN, 0) + '</span>'; }).join("");
+function g(k) { return num(R[k]); }
+var allAcc = g("accuracy, all plates");
+bars($("rob-bars"), [
+  {label: "First move TRUST", v: g("accuracy, first move TRUST"), text: pct(g("accuracy, first move TRUST")), tip: R["accuracy, first move TRUST"]},
+  {label: "TRUST + REMEASURE", v: g("accuracy, TRUST + REMEASURE (proceed)"), text: pct(g("accuracy, TRUST + REMEASURE (proceed)")), tip: R["accuracy, TRUST + REMEASURE (proceed)"]},
+  {label: "REVIEW plates", v: g("accuracy, REVIEW plates"), text: pct(g("accuracy, REVIEW plates")), tip: R["accuracy, REVIEW plates"], cls: "hot"},
+  {label: "All plates", v: allAcc, text: pct(allAcc), cls: "alt", tip: R["accuracy, all plates"]}], {max: 1, ref: allAcc});
+bars($("node-bars"), [
+  {label: "Minimax", v: mm, text: mm.toLocaleString(), cls: "alt", tip: "Minimax time (mean of 5): " + R["minimax time (mean of 5)"]},
+  {label: "Alpha-beta", v: ab, text: ab.toLocaleString(), tip: "Alpha-beta time (mean of 5): " + R["alpha-beta time (mean of 5)"]}], {max: mm});
+$("saving").textContent = pct(1 - ab / mm) + " fewer nodes";
+$("saving-note").textContent = "Time: " + R["minimax time (mean of 5)"] + " minimax vs " + R["alpha-beta time (mean of 5)"] + " alpha-beta (mean of 5 runs). Same value and best move on every plate.";
+var trustAcc = g("accuracy, first move TRUST");
+$("check-why").textContent += " Reading: accuracy on TRUST plates is " + pct(trustAcc) + " against " + pct(allAcc) + " over all plates, so this check measures how stable a label is, not whether it is correct.";
+
+/* ---- step 3 ---- */
+$("plan-why").textContent = "State = (current checkpoint, set of visited checkpoints), cost = Euclidean distance, ALIGNMENT first plus precedence pairs. A* uses an admissible heuristic: the minimum spanning tree of the unvisited checkpoints plus the distance to the nearest one. 5 runs × 60 random plates per K.";
+var Ks = []; S.forEach(function (r) { if (Ks.indexOf(r.K) < 0) Ks.push(r.K); });
+var curK = maxK;
+var order = ["BFS", "DFS", "IDDFS", "UCS", "Greedy(MST)", "A*(MST)", "A*(weak)"];
+function drawK() {
+  $("kpick").innerHTML = Ks.map(function (k) { return '<button type="button" aria-pressed="' + (k === curK) + '" data-k="' + k + '">K = ' + k + '</button>'; }).join("");
+  var rows = order.map(function (m) { return sRow(curK, m); });
+  var maxN = Math.max.apply(null, rows.map(function (r) { return r.skipped ? 1 : r.nodes; }));
+  bars($("s-nodes"), rows.map(function (r) { return {label: r.m, v: r.skipped ? 1 : r.nodes, text: r.skipped ? "skipped" : r.nodes.toFixed(1), cls: r.m.indexOf("A*") === 0 ? "" : "alt", tip: r.m + ": " + r.nodes + " nodes, " + r.ms + " ms"}; }), {log: true, max: Math.max(maxN, 10)});
+  var maxR = Math.max.apply(null, rows.map(function (r) { return r.ratio || 1; }));
+  bars($("s-ratio"), rows.map(function (r) { return {label: r.m, v: r.ratio || 1, text: r.skipped ? "-" : r.ratio.toFixed(3), cls: r.ratio > 1.0005 ? "hot" : "", tip: r.m + ": " + r.opt + " of plates solved optimally"}; }), {min: 1, max: Math.max(maxR, 1.05)});
+  $("s-table").innerHTML = '<tr><th>method</th><th class="n" style="text-align:right">nodes</th><th style="text-align:right">ms / plate</th><th style="text-align:right">cost ÷ optimal</th><th style="text-align:right">optimal</th><th style="text-align:right">capped</th></tr>' +
+    rows.map(function (r) { return '<tr><td>' + esc(r.m) + '</td><td class="n">' + r.nodes.toFixed(1) + '</td><td class="n">' + r.ms.toFixed(3) + '</td><td class="n">' + r.ratio.toFixed(3) + '</td><td class="n">' + esc(r.opt) + '</td><td class="n">' + esc(r.cap) + '</td></tr>'; }).join("");
+}
+$("kpick").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) { curK = +b.getAttribute("data-k"); drawK(); } });
+drawK();
+
+var RT = D.route;
+if (RT) {
+  var P = RT.points, sx = 1, names = Object.keys(P);
+  function path(seq) { return ["DOCK"].concat(seq).map(function (n) { return P[n][0] + "," + (100 - P[n][1]); }).join(" "); }
+  var svg = '<rect x="0" y="0" width="100" height="100" fill="none" stroke="var(--line)"/>';
+  svg += '<polyline points="' + path(RT.bfs) + '" fill="none" stroke="var(--s2)" stroke-width="1.1" stroke-dasharray="3 2"/>';
+  svg += '<polyline points="' + path(RT.astar) + '" fill="none" stroke="var(--s1)" stroke-width="1.6"/>';
+  names.forEach(function (n) {
+    var x = P[n][0], y = 100 - P[n][1], anchor = x > 70 ? "end" : "start", dx = x > 70 ? -2.4 : 2.4;
+    svg += '<circle cx="' + x + '" cy="' + y + '" r="' + (n === "DOCK" ? 2.2 : 1.8) + '" fill="' + (n === "DOCK" ? "var(--ink)" : "var(--surface)") + '" stroke="var(--ink)" stroke-width=".7"/>';
+    svg += '<text x="' + (x + dx) + '" y="' + (y + 1) + '" font-size="3.1" text-anchor="' + anchor + '">' + esc(n.replace("_", " ")) + '</text>';
+  });
+  $("map").innerHTML = svg;
+  $("map-title").textContent = "Example plate " + RT.pid + " (" + RT.label + ")";
+  $("map-legend").innerHTML = '<span><i style="display:inline-block;width:18px;height:3px;background:var(--s1);vertical-align:middle;margin-right:6px"></i>A* route, cost ' + RT.astar_cost.toFixed(1) + '</span>' +
+    '<span><i style="display:inline-block;width:18px;height:0;border-top:2px dashed var(--s2);vertical-align:middle;margin-right:6px"></i>BFS route, cost ' + RT.bfs_cost.toFixed(1) + '</span>';
+  $("map-facts").innerHTML = [
+    ["Checkpoints", Object.keys(P).length - 1 + " + DOCK"],
+    ["Rules fired", RT.fired.join(", ")],
+    ["Robustness move", RT.decision],
+    ["A* order", RT.astar.join(" → ")],
+    ["BFS order", RT.bfs.join(" → ")],
+    ["Extra distance with BFS", ((RT.bfs_cost / RT.astar_cost - 1) * 100).toFixed(1) + "% (" + (RT.bfs_cost - RT.astar_cost).toFixed(1) + " units)"],
+    ["Nodes expanded", "A* " + RT.astar_nodes + " · BFS " + RT.bfs_nodes]
+  ].map(function (r) { return '<div><span style="color:var(--muted)">' + r[0] + '</span><br>' + esc(r[1]) + '</div>'; }).join("");
+}
+
+/* ---- step 4 ---- */
+var modes = [["bt", "Backtracking", "var(--s1)"], ["fc", "Forward checking", "var(--s2)"], ["fc_mrv", "FC + MRV", "var(--s3)"], ["ac3_fc_mrv", "AC-3 + FC + MRV", "var(--s4)"]];
+var C = D.csp.map(function (r) { return {p: +r.plates, checks: r.checks, m: r.method, nodes: num(r.nodes), star: r.nodes.indexOf("*") >= 0, bt: r.backtracks, ms: r.ms, st: r.status}; });
+var plates = []; C.forEach(function (r) { if (plates.indexOf(r.p) < 0) plates.push(r.p); });
+var maxC = Math.max.apply(null, C.map(function (r) { return r.nodes; }));
+$("csp-legend").innerHTML = modes.map(function (m) { return '<span><i style="background:' + m[2] + '"></i>' + m[1] + '</span>'; }).join("");
+$("csp-groups").innerHTML = plates.map(function (p) {
+  return '<div><h3 style="margin-bottom:6px">' + p + ' plates · ' + C.filter(function (r) { return r.p === p; })[0].checks + ' checks</h3><div class="bars" id="cg' + p + '"></div></div>';
+}).join("");
+plates.forEach(function (p) {
+  bars($("cg" + p), modes.map(function (m) {
+    var r = C.filter(function (x) { return x.p === p && x.m === m[0]; })[0];
+    return {label: m[1], v: r.nodes, text: r.nodes.toFixed(1) + (r.star ? "*" : ""), color: m[2], tip: m[1] + ": " + r.nodes + " nodes, " + r.bt + " backtracks, " + r.ms + " ms; sat/unsat/capped " + r.st};
+  }), {log: true, max: maxC});
+});
+$("csp-table").innerHTML = '<tr><th>plates</th><th>solver</th><th style="text-align:right">nodes</th><th style="text-align:right">backtracks</th><th style="text-align:right">ms</th><th style="text-align:right">sat/unsat/capped</th></tr>' +
+  C.map(function (r) { var name = modes.filter(function (m) { return m[0] === r.m; })[0][1]; return '<tr><td>' + r.p + '</td><td>' + name + '</td><td class="n">' + r.nodes.toFixed(1) + (r.star ? "*" : "") + '</td><td class="n">' + esc(r.bt) + '</td><td class="n">' + esc(r.ms) + '</td><td class="n">' + esc(r.st) + '</td></tr>'; }).join("");
+var capBt = C.filter(function (r) { return r.m === "bt" && r.star; }).length, capMrv = C.filter(function (r) { return r.m === "fc_mrv" && r.star; }).length;
+$("sched-why").textContent = "Each check is a variable, each (station, time slot) a value. Constraints: one check per station slot, one check per sensor type per slot, one slot per plate at a time, and precedence inside a plate. Batch sizes where an instance hit the node cap: backtracking " + capBt + " of " + plates.length + ", FC + MRV " + capMrv + " of " + plates.length + ".";
+
+/* ---- tests ---- */
+var passed = D.tests.filter(function (t) { return t.ok; }).length, totalChecks = D.tests.reduce(function (a, t) { return a + t.checks; }, 0);
+$("tests-h").textContent = passed + " of " + D.tests.length + " test groups pass · " + totalChecks.toLocaleString() + " checks";
+$("tests-grid").innerHTML = D.tests.map(function (t) { return '<div class="test"><span class="nm">' + esc(t.name.replace(/_/g, " ")) + '</span><span class="pill' + (t.ok ? "" : " fail") + '">' + (t.ok ? "✓ PASS " : "✗ FAIL ") + t.checks + '</span></div>'; }).join("");
+
+/* ---- notes ---- */
+$("caveats").innerHTML = [
+  SYN ? "<b>Synthetic data.</b> The UCI file was not available, so a stand-in generator with the same schema produced these plates. The rules and the generator were written by the same team: treat the accuracy as a code check, not a result about real steel." : "Real UCI data in use.",
+  "Rules were written from training-split distributions; the test split was used only for scoring. Weak per-rule precision is listed in docs/RULES.md.",
+  "The noise game is a modelling choice. It only considers features used by rules that fired, and noise is 10% of a feature's training standard deviation.",
+  "Fault taxonomy, required checks, sensors and station equipment are engineering assumptions made for this project.",
+  "Regenerate this page after new benchmark runs with <span class='mono'>python3 make_dashboard.py</span>."
+].map(function (t) { return "<li>" + t + "</li>"; }).join("");
+</script>
